@@ -5,9 +5,175 @@
 ; www.davevw.com
 
 CHROUT = $ffd2
+IRQVECT = $0314
 
 *=$c000
     jmp init
+
+newirq:
+    ldx #0
+    stx $ff
+-   lda $0400,x
+    cmp $cc00 + 800,x
+    beq +
+    sta $cc00 + 800,x
+    inc $ff
++   clc
+    inx
+    cpx #200
+    bcc -
+
+    lda $ff
+    bne +
+    jmp ++
+
++   lda $01
+    sta $02
+    and #$f0
+    sta $01    
+
+    ldy #0
+    sty $22 ; row
+    sty $23 ; col
+    sty $fb ; low byte source screen
+    ldx #4
+    stx $fc ; high byte source screen
+    sty $fd ; low byte dest screen
+    ldx #$cc ; high byte dest screen
+    stx $fe
+-   lda ($fb),y
+    cmp text_buffer,y
+    bne +
+    jmp skip
++   sta text_buffer,y
+    ldx #$e
+    stx $27 ; will be high byte encoded screen codes after multiplication
+    asl
+    rol $27
+    asl
+    rol $27
+    asl
+    rol $27
+    asl
+    rol $27
+    sta $26 ; low byte encoded screen codes
+    
+    sty $ff
+
+    ldy #0
+    lda ($26),y
+    sta ($fd),y
+
+    ldy #1
+    lda ($26),y
+    sta ($fd),y
+
+    ldy #2
+    lda ($26),y
+    sta ($fd),y
+
+    ldy #3
+    lda ($26),y
+    sta ($fd),y
+
+    ldy #4
+    lda ($26),y
+    ldy #40
+    sta ($fd),y
+
+    ldy #5
+    lda ($26),y
+    ldy #41
+    sta ($fd),y
+
+    ldy #6
+    lda ($26),y
+    ldy #42
+    sta ($fd),y
+
+    ldy #7
+    lda ($26),y
+    ldy #43
+    sta ($fd),y
+
+    ldy #8
+    lda ($26),y
+    ldy #80
+    sta ($fd),y
+
+    ldy #9
+    lda ($26),y
+    ldy #81
+    sta ($fd),y
+
+    ldy #10
+    lda ($26),y
+    ldy #82
+    sta ($fd),y
+
+    ldy #11
+    lda ($26),y
+    ldy #83
+    sta ($fd),y
+
+    ldy #12
+    lda ($26),y
+    ldy #120
+    sta ($fd),y
+
+    ldy #13
+    lda ($26),y
+    ldy #121
+    sta ($fd),y
+
+    ldy #14
+    lda ($26),y
+    ldy #122
+    sta ($fd),y
+
+    ldy #15
+    lda ($26),y
+    ldy #123
+    sta ($fd),y
+
+    ldy $ff
+
+skip
+    iny
+    clc
+    lda $fd
+    adc #4
+    sta $fd
+    bcc +
+    inc $fe
++   inc $23
+    lda $23
+    cmp #10
+    bcs +
+    jmp -
++   lda #0
+    sta $23
+    clc
+    tya
+    adc #30
+    tay
+    lda $fd
+    adc #(160-40)
+    sta $fd
+    bcc +
+    inc $fe
++   inc $22
+    lda $22
+    cmp #5
+    bcs +
+    jmp -
+
+restorebank
++   lda $02
+    sta $01
+
+oldirq = *+1
+++  jmp $0000
 
 init:
     jsr copy_charrom
@@ -17,6 +183,7 @@ init:
     ldx #>title
     jsr strout
     jsr encode_chars
+    jsr swapirq
     rts
 
 switch_charram:
@@ -27,11 +194,32 @@ switch_charram:
     rts
 
 switch_screen_cc00:
+    ldx #0
+    lda #$20
+-   sta $cc00, x
+    sta $cd00, x
+    sta $ce00, x
+    sta $cf00, x
+    inx
+    bne -
     lda #$04
     sta $dd00
-    lda #$cc
-    sta $0288
+    ; lda #$cc
+    ; sta $0288
     rts
+
+swapirq:
+    lda #<newirq
+    ldx #>newirq
+    cpx IRQVECT+1
+    beq +
+    ldy IRQVECT
+    sty oldirq
+    ldy IRQVECT+1
+    sty oldirq+1
+    sta IRQVECT
+    stx IRQVECT+1 
++   rts
 
 ; copy ROM D000-DFFF to RAM D000-DFFF
 copy_charrom:
@@ -148,6 +336,13 @@ encode_char: ; given chargen bitmaps at bitmap_buffer+0 to +7, output 16 screen 
     dec $22
     bne --
     rts
+
+text_buffer:
+    !byte 32,32,32,32,32,32,32,32,32,32
+    !byte 32,32,32,32,32,32,32,32,32,32
+    !byte 32,32,32,32,32,32,32,32,32,32
+    !byte 32,32,32,32,32,32,32,32,32,32
+    !byte 32,32,32,32,32,32,32,32,32,32
 
 bitmap_buffer:
     !byte 0,0,0,0
