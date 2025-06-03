@@ -74,7 +74,7 @@ encode_chars: ; encode each 8x8 pixel character (8 bytes bitmap) into local buff
     sta $fb
     stx $fc
     lda #0
-    ldx #$c4
+    ldx #$e0
     sta $24
     stx $25
 -   lda #<bitmap_buffer
@@ -90,7 +90,7 @@ encode_chars: ; encode each 8x8 pixel character (8 bytes bitmap) into local buff
     bcc +
     inc $fc
 +   lda $fc
-    cmp #$d4
+    cmp #$e0
     bcc -
     rts
 

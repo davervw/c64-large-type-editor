@@ -76,7 +76,7 @@
     74  c066 85fb                   sta $fb
     75  c068 86fc                   stx $fc
     76  c06a a900                   lda #0
-    77  c06c a2c4                   ldx #$c4
+    77  c06c a2e0                   ldx #$e0
     78  c06e 8524                   sta $24
     79  c070 8625                   stx $25
     80  c072 a9e7               -   lda #<bitmap_buffer
@@ -92,7 +92,7 @@
     90  c087 9002                   bcc +
     91  c089 e6fc                   inc $fc
     92  c08b a5fc               +   lda $fc
-    93  c08d c9d4                   cmp #$d4
+    93  c08d c9e0                   cmp #$e0
     94  c08f 90e1                   bcc -
     95  c091 60                     rts
     96                          
