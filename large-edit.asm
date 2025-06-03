@@ -214,6 +214,7 @@ init:
     jsr strout
     jsr encode_chars
     jsr swapirq
+    jsr enqueue_keys
     rts
 
 switch_charram:
@@ -283,6 +284,18 @@ strout:
     iny
     bne -
 +   rts
+
+enqueue_keys:
+    lda #19
+    sta 631
+    lda #17
+    sta 632
+    sta 633
+    sta 634
+    sta 635
+    lda #5
+    sta 198
+    rts
 
 encode_chars: ; encode each 8x8 pixel character (8 bytes bitmap) into local buffer (4x4 = 16 byte screencodes)
     lda #$00
@@ -409,7 +422,6 @@ title:
     ;      1234567890123456789012345678901234567890
     !text "LARGE TYPE EDITOR                       ",146
     !text "(C) 2025 DAVID R. VAN WAGNER",13
-    !text 13
     !text "GITHUB.COM/DAVERVW",13
     !text "DAVEVW.COM",13
     !byte 0
