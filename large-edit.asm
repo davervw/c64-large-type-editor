@@ -11,6 +11,21 @@ IRQVECT = $0314
     jmp init
 
 newirq:
+    lda $ff
+    sta saveff
+    lda $22
+    sta save22
+    lda $23
+    sta save23
+    lda $24
+    sta save24
+    lda $25
+    sta save25
+    lda $26
+    sta save26
+    lda $27
+    sta save27
+
     ldx #0
     stx $ff
 -   lda $0400,x
@@ -172,8 +187,23 @@ restorebank
 +   lda $02
     sta $01
 
+++  lda save22
+    sta $22
+    lda save23
+    sta $23
+    lda save24
+    sta $24
+    lda save25
+    sta $25
+    lda save26
+    sta $26
+    lda save27
+    sta $27
+    lda saveff
+    sta $ff
+
 oldirq = *+1
-++  jmp $0000
+    jmp $0000
 
 init:
     jsr copy_charrom
@@ -347,6 +377,14 @@ text_buffer:
 bitmap_buffer:
     !byte 0,0,0,0
     !byte 0,0,0,0
+
+save22: !byte 0
+save23: !byte 0
+save24: !byte 0
+save25: !byte 0
+save26: !byte 0
+save27: !byte 0
+saveff: !byte 0
 
 ; 16 commodore graphics screen codes that make lo-res 2x2 pixels per character bits in NW,NE,SW,SE order low to high 
 lores_codes:
