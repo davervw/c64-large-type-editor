@@ -1,0 +1,188 @@
+
+; ******** Source: large-edit.asm
+     1                          ; large-edit.asm - Commodore 64 Large Type Editor
+     2                          ; Copyright (c) 2025 by David Van Wagner ALL RIGHTS RESERVED
+     3                          ; MIT LICENSE
+     4                          ; github.com/davervw
+     5                          ; www.davevw.com
+     6                          
+     7                          CHROUT = $ffd2
+     8                          
+     9                          *=$c000
+    10  c000 4c03c0                 jmp init
+    11                          
+    12                          init:
+    13  c003 202dc0                 jsr copy_charrom
+    14  c006 2017c0                 jsr switch_charram
+    15  c009 2022c0                 jsr switch_screen_cc00
+    16  c00c a9ff                   lda #<title
+    17  c00e a2c0                   ldx #>title
+    18  c010 2051c0                 jsr strout
+    19  c013 2062c0                 jsr encode_chars
+    20  c016 60                     rts
+    21                          
+    22                          switch_charram:
+    23  c017 ad18d0                 lda $d018
+    24  c01a 2902                   and #$02
+    25  c01c 0934                   ora #$34
+    26  c01e 8d18d0                 sta $d018
+    27  c021 60                     rts
+    28                          
+    29                          switch_screen_cc00:
+    30  c022 a904                   lda #$04
+    31  c024 8d00dd                 sta $dd00
+    32  c027 a9cc                   lda #$cc
+    33  c029 8d8802                 sta $0288
+    34  c02c 60                     rts
+    35                          
+    36                          ; copy ROM D000-DFFF to RAM D000-DFFF
+    37                          copy_charrom:
+    38  c02d 78                     sei
+    39  c02e a000                   ldy #0
+    40  c030 84fb                   sty $fb
+    41  c032 a9d0                   lda #$d0
+    42  c034 85fc                   sta $fc
+    43  c036 a501                   lda $01
+    44  c038 aa                     tax
+    45  c039 29fb                   and #$fb
+    46  c03b 8501                   sta $01
+    47  c03d b1fb               -   lda ($fb),y
+    48  c03f 91fb                   sta ($fb),y
+    49  c041 c8                     iny
+    50  c042 d0f9                   bne -
+    51  c044 e6fc                   inc $fc
+    52  c046 a5fc                   lda $fc
+    53  c048 c9e0                   cmp #$e0
+    54  c04a 90f1                   bcc -
+    55  c04c 8a                     txa
+    56  c04d 8501                   sta $01
+    57  c04f 58                     cli
+    58  c050 60                     rts
+    59                          
+    60                          strout:
+    61  c051 85fb                   sta $fb
+    62  c053 86fc                   stx $fc
+    63  c055 a000                   ldy #0
+    64  c057 b1fb               -   lda ($fb),y
+    65  c059 f006                   beq +
+    66  c05b 20d2ff                 jsr CHROUT
+    67  c05e c8                     iny
+    68  c05f d0f6                   bne -
+    69  c061 60                 +   rts
+    70                          
+    71                          encode_chars: ; encode each 8x8 pixel character (8 bytes bitmap) into local buffer (4x4 = 16 byte screencodes)
+    72  c062 a900                   lda #$00
+    73  c064 a2d0                   ldx #$d0
+    74  c066 85fb                   sta $fb
+    75  c068 86fc                   stx $fc
+    76  c06a a900                   lda #0
+    77  c06c a2c4                   ldx #$c4
+    78  c06e 8524                   sta $24
+    79  c070 8625                   stx $25
+    80  c072 a9e7               -   lda #<bitmap_buffer
+    81  c074 a2c0                   ldx #>bitmap_buffer
+    82  c076 85fd                   sta $fd
+    83  c078 86fe                   stx $fe
+    84  c07a 2092c0                 jsr copy_char
+    85  c07d 20aac0                 jsr encode_char
+    86  c080 18                     clc
+    87  c081 a5fb                   lda $fb
+    88  c083 6908                   adc #8
+    89  c085 85fb                   sta $fb
+    90  c087 9002                   bcc +
+    91  c089 e6fc                   inc $fc
+    92  c08b a5fc               +   lda $fc
+    93  c08d c9d4                   cmp #$d4
+    94  c08f 90e1                   bcc -
+    95  c091 60                     rts
+    96                          
+    97                          copy_char: ; $fb/fc source (chargen ROM), to $fd/fe destination (normal RAM)
+    98  c092 78                     sei
+    99  c093 a501                   lda $01
+   100  c095 aa                     tax
+   101  c096 29fb                   and #$fb
+   102  c098 8501                   sta $01
+   103  c09a a007                   ldy #7
+   104  c09c b1fb               -   lda ($fb),y
+   105  c09e 91fd                   sta ($fd),y
+   106  c0a0 88                     dey
+   107  c0a1 10f9                   bpl -
+   108  c0a3 8a                     txa
+   109  c0a4 0907                   ora #7
+   110  c0a6 8501                   sta $01
+   111  c0a8 58                     cli
+   112  c0a9 60                     rts    
+   113                          
+   114                          encode_char: ; given chargen bitmaps at bitmap_buffer+0 to +7, output 16 screen codes representing charcter to pointer $24/$25, pointer += 16, uses $22/$23/$ff
+   115  c0aa a200                   ldx #0
+   116  c0ac a904                   lda #4
+   117  c0ae 8522                   sta $22 ; #rows countdown
+   118  c0b0 a904               --  lda #4
+   119  c0b2 8523                   sta $23 ; #columns countdown
+   120  c0b4 bde7c0             -   lda bitmap_buffer, x
+   121  c0b7 0a                     asl
+   122  c0b8 66ff                   ror $ff
+   123  c0ba 0a                     asl
+   124  c0bb 66ff                   ror $ff
+   125  c0bd 9de7c0                 sta bitmap_buffer, x
+   126  c0c0 e8                     inx
+   127  c0c1 8a                     txa
+   128  c0c2 2901                   and #1
+   129  c0c4 d0ee                   bne -
+   130  c0c6 a5ff                   lda $ff ; bits from two bytes 01------/23------ are now in order 3210----
+   131  c0c8 4a                     lsr
+   132  c0c9 4a                     lsr
+   133  c0ca 4a                     lsr
+   134  c0cb 4a                     lsr ; bits now are ----3210 with high bits clear
+   135  c0cc a8                     tay
+   136  c0cd b9efc0                 lda lores_codes, y
+   137  c0d0 a000                   ldy #0
+   138  c0d2 9124                   sta ($24), y
+   139  c0d4 e624                   inc $24
+   140  c0d6 d002                   bne +
+   141  c0d8 e625                   inc $25
+   142  c0da ca                 +   dex
+   143  c0db ca                     dex
+   144  c0dc c623                   dec $23
+   145  c0de d0d4                   bne -
+   146  c0e0 e8                     inx
+   147  c0e1 e8                     inx
+   148  c0e2 c622                   dec $22
+   149  c0e4 d0ca                   bne --
+   150  c0e6 60                     rts
+   151                          
+   152                          bitmap_buffer:
+   153  c0e7 00000000               !byte 0,0,0,0
+   154  c0eb 00000000               !byte 0,0,0,0
+   155                          
+   156                          ; 16 commodore graphics screen codes that make lo-res 2x2 pixels per character bits in NW,NE,SW,SE order low to high 
+   157                          lores_codes:
+   158  c0ef 60                         !byte $60 ; 00/00
+   159  c0f0 7e                         !byte $7e ; 10/00 NW
+   160  c0f1 7c                         !byte $7c ; 01/00 NE
+   161  c0f2 e2                         !byte $e2 ; 11/00
+   162  c0f3 7b                         !byte $7b ; 00/10 SW
+   163  c0f4 61                         !byte $61 ; 10/10
+   164  c0f5 ff                         !byte $ff ; 01/10
+   165  c0f6 ec                         !byte $ec ; 11/10
+   166  c0f7 6c                         !byte $6c ; 00/01 SE
+   167  c0f8 7f                         !byte $7f ; 10/01
+   168  c0f9 e1                         !byte $e1 ; 01/01
+   169  c0fa fb                         !byte $fb ; 11/01
+   170  c0fb 62                         !byte $62 ; 00/11
+   171  c0fc fc                         !byte $fc ; 10/11
+   172  c0fd fe                         !byte $fe ; 01/11
+   173  c0fe e0                         !byte $e0 ; 11/11
+   174                          
+   175                          title: 
+   176  c0ff 9312                   !byte 147,18
+   177                              ;               1         2         3         4
+   178                              ;      1234567890123456789012345678901234567890
+   179  c101 4c41524745205459...    !text "LARGE TYPE EDITOR                       "
+   180  c129 2843292032303235...    !text "(C) 2025 DAVID R. VAN WAGNER            "
+   181  c151 2020202020202020...    !text "                                        "
+   182  c179 4749544855422e43...    !text "GITHUB.COM/DAVERVW                      "
+   183  c1a1 4441564556572e43...    !text "DAVEVW.COM                              "
+   184  c1c9 00                     !byte 0
+   185                          
+   186                          finish:

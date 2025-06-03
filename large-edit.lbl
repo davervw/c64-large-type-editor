@@ -1,0 +1,13 @@
+	lores_codes	= $c0ef	; ?
+	title	= $c0ff	; ?
+	encode_char	= $c0aa	; ?
+	encode_chars	= $c062	; ?
+	switch_charram	= $c017	; ?
+	init	= $c003	; ?
+	strout	= $c051	; ?
+	bitmap_buffer	= $c0e7	; ?
+	copy_charrom	= $c02d	; ?
+	switch_screen_cc00	= $c022	; ?
+	finish	= $c1ca	; unused
+	copy_char	= $c092	; ?
+	CHROUT	= $ffd2
