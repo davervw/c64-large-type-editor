@@ -22,6 +22,6 @@
 	IRQVECT	= $314
 	newirq	= $c003
 	switch_screen_cc00	= $c17a	; ?
-	finish	= $c385	; unused
+	finish	= $c322	; unused
 	copy_char	= $c214	; ?
 	CHROUT	= $ffd2

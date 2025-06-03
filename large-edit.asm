@@ -234,8 +234,6 @@ switch_screen_cc00:
     bne -
     lda #$04
     sta $dd00
-    ; lda #$cc
-    ; sta $0288
     rts
 
 swapirq:
@@ -409,11 +407,11 @@ title:
     !byte 147,18
     ;               1         2         3         4
     ;      1234567890123456789012345678901234567890
-    !text "LARGE TYPE EDITOR                       "
-    !text "(C) 2025 DAVID R. VAN WAGNER            "
-    !text "                                        "
-    !text "GITHUB.COM/DAVERVW                      "
-    !text "DAVEVW.COM                              "
+    !text "LARGE TYPE EDITOR                       ",146
+    !text "(C) 2025 DAVID R. VAN WAGNER",13
+    !text 13
+    !text "GITHUB.COM/DAVERVW",13
+    !text "DAVEVW.COM",13
     !byte 0
 
 finish:
