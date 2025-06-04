@@ -4,6 +4,33 @@
 ; github.com/davervw
 ; www.davevw.com
 
+; Memory map
+; 0000-00FF zero page: temps(saved):22,23,24,25,26,27,ff  and not saved: 02,fb,fc,fd,fe
+; 0100-01FF stack
+; 0200-03FF more lower RAM for OS/BASIC
+; 0400-07FF logical screen codes memory (BASIC thinks screen is here)
+; 0800-09FF BASIC RAM
+; A000-BFFF BASIC ROM
+; B400-B7FF color_next (banked RAM under ROM) = changes detected as if no viewports
+; BC00-BFFF color_copy (banked RAM under ROM) = what color memory should be as if no viewports
+; B800-BBFF color_last (banked RAM under ROM) = exact copy of color memory applied with viewports 
+; C000-CBFF Large Type Editor machine code program, data, and misc. buffers
+; CC00-CFFF VIC-II screen displayed
+; D000-D7FF I/O (and banked chargen ROM, and banked RAM with copy of chargen ROM)
+; D800-DFFF Color nybles in I/O space (and banked chargen ROM, and banked RAM with copy of chargen ROM)
+; E000-FFFF BASIC(more) and KERNAL ROM (banked RAM is encoded 4x4 large type characters each using 16 byte PETSCII)
+
+; Bank/Addreses/Functions
+; $01  0000  A000  C000 D800  E000
+; 0    RAM   RAM   RAM  RAM   RAM         64K RAM
+; 1    RAM   RAM   RAM  CHAR  RAM
+; 2    RAM   RAM   RAM  CHAR  KERNAL
+; 3    RAM   BASIC RAM  CHAR  KERNAL
+; 4    RAM   RAM   RAM  RAM   RAM
+; 5    RAM   RAM   RAM  I/O   RAM
+; 6    RAM   RAM   RAM  I/O   KERNAL
+; 7    RAM   BASIC RAM  I/O   KERNAL      C64 NORMAL
+
 CHROUT = $ffd2
 IRQVECT = $0314
 
