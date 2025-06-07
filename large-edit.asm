@@ -52,6 +52,16 @@ newirq:
     sta save26
     lda $27
     sta save27
+    lda $02
+    sta save02
+    lda $fb
+    sta savefb
+    lda $fc
+    sta savefc
+    lda $fd
+    sta savefd
+    lda $fe
+    sta savefe
 
     ldx #0
     stx $ff
@@ -265,6 +275,16 @@ restorebank
     sta $27
     lda saveff
     sta $ff
+    lda save02
+    sta $02
+    lda savefb
+    sta $fb
+    lda savefc
+    sta $fc
+    lda savefd
+    sta $fd
+    lda savefe
+    sta $fe
 
 oldirq = *+1
     jmp $0000
@@ -462,6 +482,11 @@ save25: !byte 0
 save26: !byte 0
 save27: !byte 0
 saveff: !byte 0
+save02: !byte 0
+savefb: !byte 0
+savefc: !byte 0
+savefd: !byte 0
+savefe: !byte 0
 
 lastcase: !byte 0
 redraw: !byte 0

@@ -37,464 +37,489 @@
     35                          IRQVECT = $0314
     36                          
     37                          *=$c000
-    38  c000 4ca0c1                 jmp init
+    38  c000 4cd2c1                 jmp init
     39                          
     40                          newirq:
     41  c003 a5ff                   lda $ff
-    42  c005 8da7c3                 sta saveff
+    42  c005 8dd9c3                 sta saveff
     43  c008 a522                   lda $22
-    44  c00a 8da1c3                 sta save22
+    44  c00a 8dd3c3                 sta save22
     45  c00d a523                   lda $23
-    46  c00f 8da2c3                 sta save23
+    46  c00f 8dd4c3                 sta save23
     47  c012 a524                   lda $24
-    48  c014 8da3c3                 sta save24
+    48  c014 8dd5c3                 sta save24
     49  c017 a525                   lda $25
-    50  c019 8da4c3                 sta save25
+    50  c019 8dd6c3                 sta save25
     51  c01c a526                   lda $26
-    52  c01e 8da5c3                 sta save26
+    52  c01e 8dd7c3                 sta save26
     53  c021 a527                   lda $27
-    54  c023 8da6c3                 sta save27
-    55                          
-    56  c026 a200                   ldx #0
-    57  c028 86ff                   stx $ff
-    58  c02a bd0004             -   lda $0400,x
-    59  c02d 2ca9c3                 bit redraw
-    60  c030 3005                   bmi forced
-    61  c032 dd20cf                 cmp $cc00 + 800,x
-    62  c035 f005                   beq +
-    63                          forced:
-    64  c037 9d20cf                 sta $cc00 + 800,x
-    65  c03a e6ff                   inc $ff ; a change occurred, guaranteed not not wrap
-    66  c03c 18                 +   clc
-    67  c03d e8                     inx
-    68  c03e e0c8                   cpx #200
-    69  c040 90e8                   bcc -
-    70                          
-    71                              ; check case change
-    72  c042 a501                   lda $01
-    73  c044 8502                   sta $02
-    74  c046 0907                   ora #7 ; (normal) with I/O
-    75  c048 8501                   sta $01
-    76  c04a ad18d0                 lda $d018
-    77  c04d 2902                   and #2
-    78  c04f cda8c3                 cmp lastcase
-    79  c052 f00a                   beq +
-    80  c054 8da8c3                 sta lastcase
-    81  c057 e6ff                   inc $ff ; a change occurred, guaranteed not to wrap
-    82  c059 a980                   lda #$80
-    83  c05b 8da9c3                 sta redraw
-    84  c05e a502               +   lda $02
-    85  c060 8501                   sta $01
-    86                          
-    87  c062 a5ff                   lda $ff
-    88  c064 d003                   bne +
-    89  c066 4c7ac1                 jmp ++
-    90                          
-    91  c069 a501               +   lda $01
-    92  c06b 8502                   sta $02
-    93  c06d 29f8                   and #$f8 ; all RAM
-    94  c06f 8501                   sta $01    
-    95                          
-    96  c071 a000                   ldy #0
-    97  c073 8422                   sty $22 ; row
-    98  c075 8423                   sty $23 ; col
-    99  c077 84fb                   sty $fb ; low byte source screen
-   100  c079 a204                   ldx #4
-   101  c07b 86fc                   stx $fc ; high byte source screen
-   102  c07d 84fd                   sty $fd ; low byte dest screen
-   103  c07f a2cc                   ldx #$cc ; high byte dest screen
-   104  c081 86fe                   stx $fe
-   105  c083 b1fb               -   lda ($fb),y
-   106  c085 2ca9c3                 bit redraw
-   107  c088 3008                   bmi +
-   108  c08a d9d1c2                 cmp text_buffer,y
-   109  c08d d003                   bne +
-   110  c08f 4c3cc1                 jmp skip
-   111  c092 99d1c2             +   sta text_buffer,y
-   112  c095 a20e                   ldx #$e
-   113  c097 8627                   stx $27 ; will be high byte encoded screen codes after multiplication
-   114  c099 0a                     asl
-   115  c09a 2627                   rol $27
-   116  c09c 0a                     asl
-   117  c09d 2627                   rol $27
-   118  c09f 0a                     asl
-   119  c0a0 2627                   rol $27
-   120  c0a2 0a                     asl
-   121  c0a3 2627                   rol $27
-   122  c0a5 8526                   sta $26 ; low byte encoded screen codes
-   123                          
-   124                              ; check lowercase
-   125  c0a7 a502                   lda $02
-   126  c0a9 0907                   ora #7 ; normal w/ IO
-   127  c0ab 8501                   sta $01
-   128  c0ad ad18d0                 lda $d018
-   129  c0b0 2902                   and #2
-   130  c0b2 f006                   beq +
-   131  c0b4 a527                   lda $27
-   132  c0b6 0910                   ora #$10
-   133  c0b8 8527                   sta $27
-   134  c0ba a502               +   lda $02
-   135  c0bc 29f8                   and #$f8
-   136  c0be 8501                   sta $01
-   137                             
-   138  c0c0 84ff                   sty $ff
-   139                          
-   140  c0c2 a000                   ldy #0
-   141  c0c4 b126                   lda ($26),y
-   142  c0c6 91fd                   sta ($fd),y
-   143                          
-   144  c0c8 a001                   ldy #1
-   145  c0ca b126                   lda ($26),y
-   146  c0cc 91fd                   sta ($fd),y
-   147                          
-   148  c0ce a002                   ldy #2
-   149  c0d0 b126                   lda ($26),y
-   150  c0d2 91fd                   sta ($fd),y
-   151                          
-   152  c0d4 a003                   ldy #3
-   153  c0d6 b126                   lda ($26),y
-   154  c0d8 91fd                   sta ($fd),y
-   155                          
-   156  c0da a004                   ldy #4
-   157  c0dc b126                   lda ($26),y
-   158  c0de a028                   ldy #40
-   159  c0e0 91fd                   sta ($fd),y
-   160                          
-   161  c0e2 a005                   ldy #5
-   162  c0e4 b126                   lda ($26),y
-   163  c0e6 a029                   ldy #41
-   164  c0e8 91fd                   sta ($fd),y
+    54  c023 8dd8c3                 sta save27
+    55  c026 a502                   lda $02
+    56  c028 8ddac3                 sta save02
+    57  c02b a5fb                   lda $fb
+    58  c02d 8ddbc3                 sta savefb
+    59  c030 a5fc                   lda $fc
+    60  c032 8ddcc3                 sta savefc
+    61  c035 a5fd                   lda $fd
+    62  c037 8dddc3                 sta savefd
+    63  c03a a5fe                   lda $fe
+    64  c03c 8ddec3                 sta savefe
+    65                          
+    66  c03f a200                   ldx #0
+    67  c041 86ff                   stx $ff
+    68  c043 bd0004             -   lda $0400,x
+    69  c046 2ce0c3                 bit redraw
+    70  c049 3005                   bmi forced
+    71  c04b dd20cf                 cmp $cc00 + 800,x
+    72  c04e f005                   beq +
+    73                          forced:
+    74  c050 9d20cf                 sta $cc00 + 800,x
+    75  c053 e6ff                   inc $ff ; a change occurred, guaranteed not not wrap
+    76  c055 18                 +   clc
+    77  c056 e8                     inx
+    78  c057 e0c8                   cpx #200
+    79  c059 90e8                   bcc -
+    80                          
+    81                              ; check case change
+    82  c05b a501                   lda $01
+    83  c05d 8502                   sta $02
+    84  c05f 0907                   ora #7 ; (normal) with I/O
+    85  c061 8501                   sta $01
+    86  c063 ad18d0                 lda $d018
+    87  c066 2902                   and #2
+    88  c068 cddfc3                 cmp lastcase
+    89  c06b f00a                   beq +
+    90  c06d 8ddfc3                 sta lastcase
+    91  c070 e6ff                   inc $ff ; a change occurred, guaranteed not to wrap
+    92  c072 a980                   lda #$80
+    93  c074 8de0c3                 sta redraw
+    94  c077 a502               +   lda $02
+    95  c079 8501                   sta $01
+    96                          
+    97  c07b a5ff                   lda $ff
+    98  c07d d003                   bne +
+    99  c07f 4c93c1                 jmp ++
+   100                          
+   101  c082 a501               +   lda $01
+   102  c084 8502                   sta $02
+   103  c086 29f8                   and #$f8 ; all RAM
+   104  c088 8501                   sta $01    
+   105                          
+   106  c08a a000                   ldy #0
+   107  c08c 8422                   sty $22 ; row
+   108  c08e 8423                   sty $23 ; col
+   109  c090 84fb                   sty $fb ; low byte source screen
+   110  c092 a204                   ldx #4
+   111  c094 86fc                   stx $fc ; high byte source screen
+   112  c096 84fd                   sty $fd ; low byte dest screen
+   113  c098 a2cc                   ldx #$cc ; high byte dest screen
+   114  c09a 86fe                   stx $fe
+   115  c09c b1fb               -   lda ($fb),y
+   116  c09e 2ce0c3                 bit redraw
+   117  c0a1 3008                   bmi +
+   118  c0a3 d903c3                 cmp text_buffer,y
+   119  c0a6 d003                   bne +
+   120  c0a8 4c55c1                 jmp skip
+   121  c0ab 9903c3             +   sta text_buffer,y
+   122  c0ae a20e                   ldx #$e
+   123  c0b0 8627                   stx $27 ; will be high byte encoded screen codes after multiplication
+   124  c0b2 0a                     asl
+   125  c0b3 2627                   rol $27
+   126  c0b5 0a                     asl
+   127  c0b6 2627                   rol $27
+   128  c0b8 0a                     asl
+   129  c0b9 2627                   rol $27
+   130  c0bb 0a                     asl
+   131  c0bc 2627                   rol $27
+   132  c0be 8526                   sta $26 ; low byte encoded screen codes
+   133                          
+   134                              ; check lowercase
+   135  c0c0 a502                   lda $02
+   136  c0c2 0907                   ora #7 ; normal w/ IO
+   137  c0c4 8501                   sta $01
+   138  c0c6 ad18d0                 lda $d018
+   139  c0c9 2902                   and #2
+   140  c0cb f006                   beq +
+   141  c0cd a527                   lda $27
+   142  c0cf 0910                   ora #$10
+   143  c0d1 8527                   sta $27
+   144  c0d3 a502               +   lda $02
+   145  c0d5 29f8                   and #$f8
+   146  c0d7 8501                   sta $01
+   147                             
+   148  c0d9 84ff                   sty $ff
+   149                          
+   150  c0db a000                   ldy #0
+   151  c0dd b126                   lda ($26),y
+   152  c0df 91fd                   sta ($fd),y
+   153                          
+   154  c0e1 a001                   ldy #1
+   155  c0e3 b126                   lda ($26),y
+   156  c0e5 91fd                   sta ($fd),y
+   157                          
+   158  c0e7 a002                   ldy #2
+   159  c0e9 b126                   lda ($26),y
+   160  c0eb 91fd                   sta ($fd),y
+   161                          
+   162  c0ed a003                   ldy #3
+   163  c0ef b126                   lda ($26),y
+   164  c0f1 91fd                   sta ($fd),y
    165                          
-   166  c0ea a006                   ldy #6
-   167  c0ec b126                   lda ($26),y
-   168  c0ee a02a                   ldy #42
-   169  c0f0 91fd                   sta ($fd),y
+   166  c0f3 a004                   ldy #4
+   167  c0f5 b126                   lda ($26),y
+   168  c0f7 a028                   ldy #40
+   169  c0f9 91fd                   sta ($fd),y
    170                          
-   171  c0f2 a007                   ldy #7
-   172  c0f4 b126                   lda ($26),y
-   173  c0f6 a02b                   ldy #43
-   174  c0f8 91fd                   sta ($fd),y
+   171  c0fb a005                   ldy #5
+   172  c0fd b126                   lda ($26),y
+   173  c0ff a029                   ldy #41
+   174  c101 91fd                   sta ($fd),y
    175                          
-   176  c0fa a008                   ldy #8
-   177  c0fc b126                   lda ($26),y
-   178  c0fe a050                   ldy #80
-   179  c100 91fd                   sta ($fd),y
+   176  c103 a006                   ldy #6
+   177  c105 b126                   lda ($26),y
+   178  c107 a02a                   ldy #42
+   179  c109 91fd                   sta ($fd),y
    180                          
-   181  c102 a009                   ldy #9
-   182  c104 b126                   lda ($26),y
-   183  c106 a051                   ldy #81
-   184  c108 91fd                   sta ($fd),y
+   181  c10b a007                   ldy #7
+   182  c10d b126                   lda ($26),y
+   183  c10f a02b                   ldy #43
+   184  c111 91fd                   sta ($fd),y
    185                          
-   186  c10a a00a                   ldy #10
-   187  c10c b126                   lda ($26),y
-   188  c10e a052                   ldy #82
-   189  c110 91fd                   sta ($fd),y
+   186  c113 a008                   ldy #8
+   187  c115 b126                   lda ($26),y
+   188  c117 a050                   ldy #80
+   189  c119 91fd                   sta ($fd),y
    190                          
-   191  c112 a00b                   ldy #11
-   192  c114 b126                   lda ($26),y
-   193  c116 a053                   ldy #83
-   194  c118 91fd                   sta ($fd),y
+   191  c11b a009                   ldy #9
+   192  c11d b126                   lda ($26),y
+   193  c11f a051                   ldy #81
+   194  c121 91fd                   sta ($fd),y
    195                          
-   196  c11a a00c                   ldy #12
-   197  c11c b126                   lda ($26),y
-   198  c11e a078                   ldy #120
-   199  c120 91fd                   sta ($fd),y
+   196  c123 a00a                   ldy #10
+   197  c125 b126                   lda ($26),y
+   198  c127 a052                   ldy #82
+   199  c129 91fd                   sta ($fd),y
    200                          
-   201  c122 a00d                   ldy #13
-   202  c124 b126                   lda ($26),y
-   203  c126 a079                   ldy #121
-   204  c128 91fd                   sta ($fd),y
+   201  c12b a00b                   ldy #11
+   202  c12d b126                   lda ($26),y
+   203  c12f a053                   ldy #83
+   204  c131 91fd                   sta ($fd),y
    205                          
-   206  c12a a00e                   ldy #14
-   207  c12c b126                   lda ($26),y
-   208  c12e a07a                   ldy #122
-   209  c130 91fd                   sta ($fd),y
+   206  c133 a00c                   ldy #12
+   207  c135 b126                   lda ($26),y
+   208  c137 a078                   ldy #120
+   209  c139 91fd                   sta ($fd),y
    210                          
-   211  c132 a00f                   ldy #15
-   212  c134 b126                   lda ($26),y
-   213  c136 a07b                   ldy #123
-   214  c138 91fd                   sta ($fd),y
+   211  c13b a00d                   ldy #13
+   212  c13d b126                   lda ($26),y
+   213  c13f a079                   ldy #121
+   214  c141 91fd                   sta ($fd),y
    215                          
-   216  c13a a4ff                   ldy $ff
-   217                          
-   218                          skip
-   219  c13c c8                     iny
-   220  c13d 18                     clc
-   221  c13e a5fd                   lda $fd
-   222  c140 6904                   adc #4
-   223  c142 85fd                   sta $fd
-   224  c144 9002                   bcc +
-   225  c146 e6fe                   inc $fe
-   226  c148 e623               +   inc $23
-   227  c14a a523                   lda $23
-   228  c14c c90a                   cmp #10
-   229  c14e b003                   bcs +
-   230  c150 4c83c0                 jmp -
-   231  c153 a900               +   lda #0
-   232  c155 8523                   sta $23
-   233  c157 18                     clc
-   234  c158 98                     tya
-   235  c159 691e                   adc #30
-   236  c15b a8                     tay
-   237  c15c a5fd                   lda $fd
-   238  c15e 6978                   adc #(160-40)
-   239  c160 85fd                   sta $fd
-   240  c162 9002                   bcc +
-   241  c164 e6fe                   inc $fe
-   242  c166 e622               +   inc $22
-   243  c168 a522                   lda $22
-   244  c16a c905                   cmp #5
-   245  c16c b003                   bcs +
-   246  c16e 4c83c0                 jmp -
-   247  c171 a900               +   lda #0
-   248  c173 8da9c3                 sta redraw
-   249                          
-   250                          restorebank
-   251  c176 a502                   lda $02
-   252  c178 8501                   sta $01
-   253                          
-   254  c17a ada1c3             ++  lda save22
-   255  c17d 8522                   sta $22
-   256  c17f ada2c3                 lda save23
-   257  c182 8523                   sta $23
-   258  c184 ada3c3                 lda save24
-   259  c187 8524                   sta $24
-   260  c189 ada4c3                 lda save25
-   261  c18c 8525                   sta $25
-   262  c18e ada5c3                 lda save26
-   263  c191 8526                   sta $26
-   264  c193 ada6c3                 lda save27
-   265  c196 8527                   sta $27
-   266  c198 ada7c3                 lda saveff
-   267  c19b 85ff                   sta $ff
-   268                          
-   269                          oldirq = *+1
-   270  c19d 4c0000                 jmp $0000
-   271                          
-   272                          init:
-   273  c1a0 20ffc1                 jsr copy_charrom
-   274  c1a3 20bfc1                 jsr switch_charram
-   275  c1a6 20cac1                 jsr switch_screen_cc00
-   276  c1a9 a9ba                   lda #<title
-   277  c1ab a2c3                   ldx #>title
-   278  c1ad 2023c2                 jsr strout
-   279  c1b0 204cc2                 jsr encode_chars
-   280  c1b3 a980                   lda #$80
-   281  c1b5 8da9c3                 sta redraw
-   282  c1b8 20e3c1                 jsr swapirq
-   283  c1bb 2034c2                 jsr enqueue_keys
-   284  c1be 60                     rts
-   285                          
-   286                          switch_charram:
-   287  c1bf ad18d0                 lda $d018
-   288  c1c2 2902                   and #$02
-   289  c1c4 0934                   ora #$34
-   290  c1c6 8d18d0                 sta $d018
-   291  c1c9 60                     rts
-   292                          
-   293                          switch_screen_cc00:
-   294  c1ca a200                   ldx #0
-   295  c1cc a920                   lda #$20
-   296  c1ce 9d00cc             -   sta $cc00, x
-   297  c1d1 9d00cd                 sta $cd00, x
-   298  c1d4 9d00ce                 sta $ce00, x
-   299  c1d7 9d00cf                 sta $cf00, x
-   300  c1da e8                     inx
-   301  c1db d0f1                   bne -
-   302  c1dd a904                   lda #$04
-   303  c1df 8d00dd                 sta $dd00
-   304  c1e2 60                     rts
+   216  c143 a00e                   ldy #14
+   217  c145 b126                   lda ($26),y
+   218  c147 a07a                   ldy #122
+   219  c149 91fd                   sta ($fd),y
+   220                          
+   221  c14b a00f                   ldy #15
+   222  c14d b126                   lda ($26),y
+   223  c14f a07b                   ldy #123
+   224  c151 91fd                   sta ($fd),y
+   225                          
+   226  c153 a4ff                   ldy $ff
+   227                          
+   228                          skip
+   229  c155 c8                     iny
+   230  c156 18                     clc
+   231  c157 a5fd                   lda $fd
+   232  c159 6904                   adc #4
+   233  c15b 85fd                   sta $fd
+   234  c15d 9002                   bcc +
+   235  c15f e6fe                   inc $fe
+   236  c161 e623               +   inc $23
+   237  c163 a523                   lda $23
+   238  c165 c90a                   cmp #10
+   239  c167 b003                   bcs +
+   240  c169 4c9cc0                 jmp -
+   241  c16c a900               +   lda #0
+   242  c16e 8523                   sta $23
+   243  c170 18                     clc
+   244  c171 98                     tya
+   245  c172 691e                   adc #30
+   246  c174 a8                     tay
+   247  c175 a5fd                   lda $fd
+   248  c177 6978                   adc #(160-40)
+   249  c179 85fd                   sta $fd
+   250  c17b 9002                   bcc +
+   251  c17d e6fe                   inc $fe
+   252  c17f e622               +   inc $22
+   253  c181 a522                   lda $22
+   254  c183 c905                   cmp #5
+   255  c185 b003                   bcs +
+   256  c187 4c9cc0                 jmp -
+   257  c18a a900               +   lda #0
+   258  c18c 8de0c3                 sta redraw
+   259                          
+   260                          restorebank
+   261  c18f a502                   lda $02
+   262  c191 8501                   sta $01
+   263                          
+   264  c193 add3c3             ++  lda save22
+   265  c196 8522                   sta $22
+   266  c198 add4c3                 lda save23
+   267  c19b 8523                   sta $23
+   268  c19d add5c3                 lda save24
+   269  c1a0 8524                   sta $24
+   270  c1a2 add6c3                 lda save25
+   271  c1a5 8525                   sta $25
+   272  c1a7 add7c3                 lda save26
+   273  c1aa 8526                   sta $26
+   274  c1ac add8c3                 lda save27
+   275  c1af 8527                   sta $27
+   276  c1b1 add9c3                 lda saveff
+   277  c1b4 85ff                   sta $ff
+   278  c1b6 addac3                 lda save02
+   279  c1b9 8502                   sta $02
+   280  c1bb addbc3                 lda savefb
+   281  c1be 85fb                   sta $fb
+   282  c1c0 addcc3                 lda savefc
+   283  c1c3 85fc                   sta $fc
+   284  c1c5 adddc3                 lda savefd
+   285  c1c8 85fd                   sta $fd
+   286  c1ca addec3                 lda savefe
+   287  c1cd 85fe                   sta $fe
+   288                          
+   289                          oldirq = *+1
+   290  c1cf 4c0000                 jmp $0000
+   291                          
+   292                          init:
+   293  c1d2 2031c2                 jsr copy_charrom
+   294  c1d5 20f1c1                 jsr switch_charram
+   295  c1d8 20fcc1                 jsr switch_screen_cc00
+   296  c1db a9f1                   lda #<title
+   297  c1dd a2c3                   ldx #>title
+   298  c1df 2055c2                 jsr strout
+   299  c1e2 207ec2                 jsr encode_chars
+   300  c1e5 a980                   lda #$80
+   301  c1e7 8de0c3                 sta redraw
+   302  c1ea 2015c2                 jsr swapirq
+   303  c1ed 2066c2                 jsr enqueue_keys
+   304  c1f0 60                     rts
    305                          
-   306                          swapirq:
-   307  c1e3 a903                   lda #<newirq
-   308  c1e5 a2c0                   ldx #>newirq
-   309  c1e7 ec1503                 cpx IRQVECT+1
-   310  c1ea f012                   beq +
-   311  c1ec ac1403                 ldy IRQVECT
-   312  c1ef 8c9ec1                 sty oldirq
-   313  c1f2 ac1503                 ldy IRQVECT+1
-   314  c1f5 8c9fc1                 sty oldirq+1
-   315  c1f8 8d1403                 sta IRQVECT
-   316  c1fb 8e1503                 stx IRQVECT+1 
-   317  c1fe 60                 +   rts
-   318                          
-   319                          ; copy ROM D000-DFFF to RAM D000-DFFF
-   320                          copy_charrom:
-   321  c1ff 78                     sei
-   322  c200 a000                   ldy #0
-   323  c202 84fb                   sty $fb
-   324  c204 a9d0                   lda #$d0
-   325  c206 85fc                   sta $fc
-   326  c208 a501                   lda $01
-   327  c20a aa                     tax
-   328  c20b 29fb                   and #$fb ; bank 3 CHARGEN ROM
-   329  c20d 8501                   sta $01
-   330  c20f b1fb               -   lda ($fb),y
-   331  c211 91fb                   sta ($fb),y
-   332  c213 c8                     iny
-   333  c214 d0f9                   bne -
-   334  c216 e6fc                   inc $fc
-   335  c218 a5fc                   lda $fc
-   336  c21a c9e0                   cmp #$e0
-   337  c21c 90f1                   bcc -
-   338  c21e 8a                     txa
-   339  c21f 8501                   sta $01 ; restore to normal
-   340  c221 58                     cli
-   341  c222 60                     rts
-   342                          
-   343                          strout:
-   344  c223 85fb                   sta $fb
-   345  c225 86fc                   stx $fc
-   346  c227 a000                   ldy #0
-   347  c229 b1fb               -   lda ($fb),y
-   348  c22b f006                   beq +
-   349  c22d 20d2ff                 jsr CHROUT
-   350  c230 c8                     iny
-   351  c231 d0f6                   bne -
-   352  c233 60                 +   rts
-   353                          
-   354                          enqueue_keys:
-   355  c234 a913                   lda #19
-   356  c236 8d7702                 sta 631
-   357  c239 a911                   lda #17
-   358  c23b 8d7802                 sta 632
-   359  c23e 8d7902                 sta 633
-   360  c241 8d7a02                 sta 634
-   361  c244 8d7b02                 sta 635
-   362  c247 a905                   lda #5
-   363  c249 85c6                   sta 198
-   364  c24b 60                     rts
-   365                          
-   366                          encode_chars: ; encode each 8x8 pixel character (8 bytes bitmap) into local buffer (4x4 = 16 byte screencodes)
-   367  c24c a900                   lda #$00
-   368  c24e a2d0                   ldx #$d0
-   369  c250 85fb                   sta $fb
-   370  c252 86fc                   stx $fc
-   371  c254 a900                   lda #0
-   372  c256 a2e0                   ldx #$e0
-   373  c258 8524                   sta $24
-   374  c25a 8625                   stx $25
-   375  c25c a999               -   lda #<bitmap_buffer
-   376  c25e a2c3                   ldx #>bitmap_buffer
-   377  c260 85fd                   sta $fd
-   378  c262 86fe                   stx $fe
-   379  c264 207cc2                 jsr copy_char
-   380  c267 2094c2                 jsr encode_char
-   381  c26a 18                     clc
-   382  c26b a5fb                   lda $fb
-   383  c26d 6908                   adc #8
-   384  c26f 85fb                   sta $fb
-   385  c271 9002                   bcc +
-   386  c273 e6fc                   inc $fc
-   387  c275 a5fc               +   lda $fc
-   388  c277 c9e0                   cmp #$e0
-   389  c279 90e1                   bcc -
-   390  c27b 60                     rts
-   391                          
-   392                          copy_char: ; $fb/fc source (chargen ROM), to $fd/fe destination (normal RAM)
-   393  c27c 78                     sei
-   394  c27d a501                   lda $01
-   395  c27f aa                     tax
-   396  c280 29fb                   and #$fb ; bank 3 CHARGEN ROM
-   397  c282 8501                   sta $01
-   398  c284 a007                   ldy #7
-   399  c286 b1fb               -   lda ($fb),y
-   400  c288 91fd                   sta ($fd),y
-   401  c28a 88                     dey
-   402  c28b 10f9                   bpl -
-   403  c28d 8a                     txa
-   404  c28e 0907                   ora #7 ; normal ROM + I/O
-   405  c290 8501                   sta $01
-   406  c292 58                     cli
-   407  c293 60                     rts    
-   408                          
-   409                          encode_char: ; given chargen bitmaps at bitmap_buffer+0 to +7, output 16 screen codes representing charcter to pointer $24/$25, pointer += 16, uses $22/$23/$ff
-   410  c294 a200                   ldx #0
-   411  c296 a904                   lda #4
-   412  c298 8522                   sta $22 ; #rows countdown
-   413  c29a a904               --  lda #4
-   414  c29c 8523                   sta $23 ; #columns countdown
-   415  c29e bd99c3             -   lda bitmap_buffer, x
-   416  c2a1 0a                     asl
-   417  c2a2 66ff                   ror $ff
-   418  c2a4 0a                     asl
-   419  c2a5 66ff                   ror $ff
-   420  c2a7 9d99c3                 sta bitmap_buffer, x
-   421  c2aa e8                     inx
-   422  c2ab 8a                     txa
-   423  c2ac 2901                   and #1
-   424  c2ae d0ee                   bne -
-   425  c2b0 a5ff                   lda $ff ; bits from two bytes 01------/23------ are now in order 3210----
-   426  c2b2 4a                     lsr
-   427  c2b3 4a                     lsr
-   428  c2b4 4a                     lsr
-   429  c2b5 4a                     lsr ; bits now are ----3210 with high bits clear
-   430  c2b6 a8                     tay
-   431  c2b7 b9aac3                 lda lores_codes, y
-   432  c2ba a000                   ldy #0
-   433  c2bc 9124                   sta ($24), y
-   434  c2be e624                   inc $24
-   435  c2c0 d002                   bne +
-   436  c2c2 e625                   inc $25
-   437  c2c4 ca                 +   dex
-   438  c2c5 ca                     dex
-   439  c2c6 c623                   dec $23
-   440  c2c8 d0d4                   bne -
-   441  c2ca e8                     inx
-   442  c2cb e8                     inx
-   443  c2cc c622                   dec $22
-   444  c2ce d0ca                   bne --
-   445  c2d0 60                     rts
-   446                          
-   447                          text_buffer: ; should only need 10x5, but current algorithm uses same offset as screen so 40x5
-   448  c2d1 2020202020202020...    !byte 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32
-   449  c2f9 2020202020202020...    !byte 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32
-   450  c321 2020202020202020...    !byte 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32
-   451  c349 2020202020202020...    !byte 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32
-   452  c371 2020202020202020...    !byte 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32
-   453                          
-   454                          bitmap_buffer:
-   455  c399 00000000               !byte 0,0,0,0
-   456  c39d 00000000               !byte 0,0,0,0
-   457                          
-   458  c3a1 00                 save22: !byte 0
-   459  c3a2 00                 save23: !byte 0
-   460  c3a3 00                 save24: !byte 0
-   461  c3a4 00                 save25: !byte 0
-   462  c3a5 00                 save26: !byte 0
-   463  c3a6 00                 save27: !byte 0
-   464  c3a7 00                 saveff: !byte 0
-   465                          
-   466  c3a8 00                 lastcase: !byte 0
-   467  c3a9 00                 redraw: !byte 0
-   468                          
-   469                          ; 16 commodore graphics screen codes that make lo-res 2x2 pixels per character bits in NW,NE,SW,SE order low to high 
-   470                          lores_codes:
-   471  c3aa 60                         !byte $60 ; 00/00
-   472  c3ab 7e                         !byte $7e ; 10/00 NW
-   473  c3ac 7c                         !byte $7c ; 01/00 NE
-   474  c3ad e2                         !byte $e2 ; 11/00
-   475  c3ae 7b                         !byte $7b ; 00/10 SW
-   476  c3af 61                         !byte $61 ; 10/10
-   477  c3b0 ff                         !byte $ff ; 01/10
-   478  c3b1 ec                         !byte $ec ; 11/10
-   479  c3b2 6c                         !byte $6c ; 00/01 SE
-   480  c3b3 7f                         !byte $7f ; 10/01
-   481  c3b4 e1                         !byte $e1 ; 01/01
-   482  c3b5 fb                         !byte $fb ; 11/01
-   483  c3b6 62                         !byte $62 ; 00/11
-   484  c3b7 fc                         !byte $fc ; 10/11
-   485  c3b8 fe                         !byte $fe ; 01/11
-   486  c3b9 e0                         !byte $e0 ; 11/11
-   487                          
-   488                          title: 
-   489  c3ba 9312                   !byte 147,18
-   490                              ;               1         2         3         4
-   491                              ;      1234567890123456789012345678901234567890
-   492  c3bc 4c41524745205459...    !text "LARGE TYPE EDITOR                       ",146
-   493  c3e5 2843292032303235...    !text "(C) 2025 DAVID R. VAN WAGNER",13
-   494  c402 4749544855422e43...    !text "GITHUB.COM/DAVERVW",13
-   495  c415 4441564556572e43...    !text "DAVEVW.COM",13
-   496  c420 00                     !byte 0
-   497                          
-   498                          finish:
+   306                          switch_charram:
+   307  c1f1 ad18d0                 lda $d018
+   308  c1f4 2902                   and #$02
+   309  c1f6 0934                   ora #$34
+   310  c1f8 8d18d0                 sta $d018
+   311  c1fb 60                     rts
+   312                          
+   313                          switch_screen_cc00:
+   314  c1fc a200                   ldx #0
+   315  c1fe a920                   lda #$20
+   316  c200 9d00cc             -   sta $cc00, x
+   317  c203 9d00cd                 sta $cd00, x
+   318  c206 9d00ce                 sta $ce00, x
+   319  c209 9d00cf                 sta $cf00, x
+   320  c20c e8                     inx
+   321  c20d d0f1                   bne -
+   322  c20f a904                   lda #$04
+   323  c211 8d00dd                 sta $dd00
+   324  c214 60                     rts
+   325                          
+   326                          swapirq:
+   327  c215 a903                   lda #<newirq
+   328  c217 a2c0                   ldx #>newirq
+   329  c219 ec1503                 cpx IRQVECT+1
+   330  c21c f012                   beq +
+   331  c21e ac1403                 ldy IRQVECT
+   332  c221 8cd0c1                 sty oldirq
+   333  c224 ac1503                 ldy IRQVECT+1
+   334  c227 8cd1c1                 sty oldirq+1
+   335  c22a 8d1403                 sta IRQVECT
+   336  c22d 8e1503                 stx IRQVECT+1 
+   337  c230 60                 +   rts
+   338                          
+   339                          ; copy ROM D000-DFFF to RAM D000-DFFF
+   340                          copy_charrom:
+   341  c231 78                     sei
+   342  c232 a000                   ldy #0
+   343  c234 84fb                   sty $fb
+   344  c236 a9d0                   lda #$d0
+   345  c238 85fc                   sta $fc
+   346  c23a a501                   lda $01
+   347  c23c aa                     tax
+   348  c23d 29fb                   and #$fb ; bank 3 CHARGEN ROM
+   349  c23f 8501                   sta $01
+   350  c241 b1fb               -   lda ($fb),y
+   351  c243 91fb                   sta ($fb),y
+   352  c245 c8                     iny
+   353  c246 d0f9                   bne -
+   354  c248 e6fc                   inc $fc
+   355  c24a a5fc                   lda $fc
+   356  c24c c9e0                   cmp #$e0
+   357  c24e 90f1                   bcc -
+   358  c250 8a                     txa
+   359  c251 8501                   sta $01 ; restore to normal
+   360  c253 58                     cli
+   361  c254 60                     rts
+   362                          
+   363                          strout:
+   364  c255 85fb                   sta $fb
+   365  c257 86fc                   stx $fc
+   366  c259 a000                   ldy #0
+   367  c25b b1fb               -   lda ($fb),y
+   368  c25d f006                   beq +
+   369  c25f 20d2ff                 jsr CHROUT
+   370  c262 c8                     iny
+   371  c263 d0f6                   bne -
+   372  c265 60                 +   rts
+   373                          
+   374                          enqueue_keys:
+   375  c266 a913                   lda #19
+   376  c268 8d7702                 sta 631
+   377  c26b a911                   lda #17
+   378  c26d 8d7802                 sta 632
+   379  c270 8d7902                 sta 633
+   380  c273 8d7a02                 sta 634
+   381  c276 8d7b02                 sta 635
+   382  c279 a905                   lda #5
+   383  c27b 85c6                   sta 198
+   384  c27d 60                     rts
+   385                          
+   386                          encode_chars: ; encode each 8x8 pixel character (8 bytes bitmap) into local buffer (4x4 = 16 byte screencodes)
+   387  c27e a900                   lda #$00
+   388  c280 a2d0                   ldx #$d0
+   389  c282 85fb                   sta $fb
+   390  c284 86fc                   stx $fc
+   391  c286 a900                   lda #0
+   392  c288 a2e0                   ldx #$e0
+   393  c28a 8524                   sta $24
+   394  c28c 8625                   stx $25
+   395  c28e a9cb               -   lda #<bitmap_buffer
+   396  c290 a2c3                   ldx #>bitmap_buffer
+   397  c292 85fd                   sta $fd
+   398  c294 86fe                   stx $fe
+   399  c296 20aec2                 jsr copy_char
+   400  c299 20c6c2                 jsr encode_char
+   401  c29c 18                     clc
+   402  c29d a5fb                   lda $fb
+   403  c29f 6908                   adc #8
+   404  c2a1 85fb                   sta $fb
+   405  c2a3 9002                   bcc +
+   406  c2a5 e6fc                   inc $fc
+   407  c2a7 a5fc               +   lda $fc
+   408  c2a9 c9e0                   cmp #$e0
+   409  c2ab 90e1                   bcc -
+   410  c2ad 60                     rts
+   411                          
+   412                          copy_char: ; $fb/fc source (chargen ROM), to $fd/fe destination (normal RAM)
+   413  c2ae 78                     sei
+   414  c2af a501                   lda $01
+   415  c2b1 aa                     tax
+   416  c2b2 29fb                   and #$fb ; bank 3 CHARGEN ROM
+   417  c2b4 8501                   sta $01
+   418  c2b6 a007                   ldy #7
+   419  c2b8 b1fb               -   lda ($fb),y
+   420  c2ba 91fd                   sta ($fd),y
+   421  c2bc 88                     dey
+   422  c2bd 10f9                   bpl -
+   423  c2bf 8a                     txa
+   424  c2c0 0907                   ora #7 ; normal ROM + I/O
+   425  c2c2 8501                   sta $01
+   426  c2c4 58                     cli
+   427  c2c5 60                     rts    
+   428                          
+   429                          encode_char: ; given chargen bitmaps at bitmap_buffer+0 to +7, output 16 screen codes representing charcter to pointer $24/$25, pointer += 16, uses $22/$23/$ff
+   430  c2c6 a200                   ldx #0
+   431  c2c8 a904                   lda #4
+   432  c2ca 8522                   sta $22 ; #rows countdown
+   433  c2cc a904               --  lda #4
+   434  c2ce 8523                   sta $23 ; #columns countdown
+   435  c2d0 bdcbc3             -   lda bitmap_buffer, x
+   436  c2d3 0a                     asl
+   437  c2d4 66ff                   ror $ff
+   438  c2d6 0a                     asl
+   439  c2d7 66ff                   ror $ff
+   440  c2d9 9dcbc3                 sta bitmap_buffer, x
+   441  c2dc e8                     inx
+   442  c2dd 8a                     txa
+   443  c2de 2901                   and #1
+   444  c2e0 d0ee                   bne -
+   445  c2e2 a5ff                   lda $ff ; bits from two bytes 01------/23------ are now in order 3210----
+   446  c2e4 4a                     lsr
+   447  c2e5 4a                     lsr
+   448  c2e6 4a                     lsr
+   449  c2e7 4a                     lsr ; bits now are ----3210 with high bits clear
+   450  c2e8 a8                     tay
+   451  c2e9 b9e1c3                 lda lores_codes, y
+   452  c2ec a000                   ldy #0
+   453  c2ee 9124                   sta ($24), y
+   454  c2f0 e624                   inc $24
+   455  c2f2 d002                   bne +
+   456  c2f4 e625                   inc $25
+   457  c2f6 ca                 +   dex
+   458  c2f7 ca                     dex
+   459  c2f8 c623                   dec $23
+   460  c2fa d0d4                   bne -
+   461  c2fc e8                     inx
+   462  c2fd e8                     inx
+   463  c2fe c622                   dec $22
+   464  c300 d0ca                   bne --
+   465  c302 60                     rts
+   466                          
+   467                          text_buffer: ; should only need 10x5, but current algorithm uses same offset as screen so 40x5
+   468  c303 2020202020202020...    !byte 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32
+   469  c32b 2020202020202020...    !byte 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32
+   470  c353 2020202020202020...    !byte 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32
+   471  c37b 2020202020202020...    !byte 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32
+   472  c3a3 2020202020202020...    !byte 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32
+   473                          
+   474                          bitmap_buffer:
+   475  c3cb 00000000               !byte 0,0,0,0
+   476  c3cf 00000000               !byte 0,0,0,0
+   477                          
+   478  c3d3 00                 save22: !byte 0
+   479  c3d4 00                 save23: !byte 0
+   480  c3d5 00                 save24: !byte 0
+   481  c3d6 00                 save25: !byte 0
+   482  c3d7 00                 save26: !byte 0
+   483  c3d8 00                 save27: !byte 0
+   484  c3d9 00                 saveff: !byte 0
+   485  c3da 00                 save02: !byte 0
+   486  c3db 00                 savefb: !byte 0
+   487  c3dc 00                 savefc: !byte 0
+   488  c3dd 00                 savefd: !byte 0
+   489  c3de 00                 savefe: !byte 0
+   490                          
+   491  c3df 00                 lastcase: !byte 0
+   492  c3e0 00                 redraw: !byte 0
+   493                          
+   494                          ; 16 commodore graphics screen codes that make lo-res 2x2 pixels per character bits in NW,NE,SW,SE order low to high 
+   495                          lores_codes:
+   496  c3e1 60                         !byte $60 ; 00/00
+   497  c3e2 7e                         !byte $7e ; 10/00 NW
+   498  c3e3 7c                         !byte $7c ; 01/00 NE
+   499  c3e4 e2                         !byte $e2 ; 11/00
+   500  c3e5 7b                         !byte $7b ; 00/10 SW
+   501  c3e6 61                         !byte $61 ; 10/10
+   502  c3e7 ff                         !byte $ff ; 01/10
+   503  c3e8 ec                         !byte $ec ; 11/10
+   504  c3e9 6c                         !byte $6c ; 00/01 SE
+   505  c3ea 7f                         !byte $7f ; 10/01
+   506  c3eb e1                         !byte $e1 ; 01/01
+   507  c3ec fb                         !byte $fb ; 11/01
+   508  c3ed 62                         !byte $62 ; 00/11
+   509  c3ee fc                         !byte $fc ; 10/11
+   510  c3ef fe                         !byte $fe ; 01/11
+   511  c3f0 e0                         !byte $e0 ; 11/11
+   512                          
+   513                          title: 
+   514  c3f1 9312                   !byte 147,18
+   515                              ;               1         2         3         4
+   516                              ;      1234567890123456789012345678901234567890
+   517  c3f3 4c41524745205459...    !text "LARGE TYPE EDITOR                       ",146
+   518  c41c 2843292032303235...    !text "(C) 2025 DAVID R. VAN WAGNER",13
+   519  c439 4749544855422e43...    !text "GITHUB.COM/DAVERVW",13
+   520  c44c 4441564556572e43...    !text "DAVEVW.COM",13
+   521  c457 00                     !byte 0
+   522                          
+   523                          finish:
