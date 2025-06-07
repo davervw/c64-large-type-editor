@@ -11,9 +11,9 @@
 ; 0400-07FF logical screen codes memory (BASIC thinks screen is here)
 ; 0800-09FF BASIC RAM
 ; A000-BFFF BASIC ROM
-; B400-B7FF color_next (banked RAM under ROM) = changes detected as if no viewports
-; BC00-BFFF color_copy (banked RAM under ROM) = what color memory should be as if no viewports
-; B800-BBFF color_last (banked RAM under ROM) = exact copy of color memory applied with viewports 
+; B400-B7FF color_next (banked RAM under ROM) = changes detected as if no viewports [TODO]
+; BC00-BFFF color_copy (banked RAM under ROM) = what color memory should be as if no viewports [TODO]
+; B800-BBFF color_last (banked RAM under ROM) = exact copy of color memory applied with viewports [TODO]
 ; C000-CBFF Large Type Editor machine code program, data, and misc. buffers
 ; CC00-CFFF VIC-II screen displayed
 ; D000-D7FF I/O (and banked chargen ROM, and banked RAM with copy of chargen ROM)
@@ -56,14 +56,33 @@ newirq:
     ldx #0
     stx $ff
 -   lda $0400,x
+    bit redraw
+    bmi forced
     cmp $cc00 + 800,x
     beq +
+forced:
     sta $cc00 + 800,x
-    inc $ff
+    inc $ff ; a change occurred, guaranteed not not wrap
 +   clc
     inx
     cpx #200
     bcc -
+
+    ; check case change
+    lda $01
+    sta $02
+    ora #7 ; (normal) with I/O
+    sta $01
+    lda $d018
+    and #2
+    cmp lastcase
+    beq +
+    sta lastcase
+    inc $ff ; a change occurred, guaranteed not to wrap
+    lda #$80
+    sta redraw
++   lda $02
+    sta $01
 
     lda $ff
     bne +
@@ -71,7 +90,7 @@ newirq:
 
 +   lda $01
     sta $02
-    and #$f0
+    and #$f8 ; all RAM
     sta $01    
 
     ldy #0
@@ -84,6 +103,8 @@ newirq:
     ldx #$cc ; high byte dest screen
     stx $fe
 -   lda ($fb),y
+    bit redraw
+    bmi +
     cmp text_buffer,y
     bne +
     jmp skip
@@ -99,7 +120,21 @@ newirq:
     asl
     rol $27
     sta $26 ; low byte encoded screen codes
-    
+
+    ; check lowercase
+    lda $02
+    ora #7 ; normal w/ IO
+    sta $01
+    lda $d018
+    and #2
+    beq +
+    lda $27
+    ora #$10
+    sta $27
++   lda $02
+    and #$f8
+    sta $01
+   
     sty $ff
 
     ldy #0
@@ -209,9 +244,11 @@ skip
     cmp #5
     bcs +
     jmp -
++   lda #0
+    sta redraw
 
 restorebank
-+   lda $02
+    lda $02
     sta $01
 
 ++  lda save22
@@ -240,6 +277,8 @@ init:
     ldx #>title
     jsr strout
     jsr encode_chars
+    lda #$80
+    sta redraw
     jsr swapirq
     jsr enqueue_keys
     rts
@@ -286,7 +325,7 @@ copy_charrom:
     sta $fc
     lda $01
     tax
-    and #$fb
+    and #$fb ; bank 3 CHARGEN ROM
     sta $01
 -   lda ($fb),y
     sta ($fb),y
@@ -297,7 +336,7 @@ copy_charrom:
     cmp #$e0
     bcc -
     txa
-    sta $01
+    sta $01 ; restore to normal
     cli
     rts
 
@@ -354,7 +393,7 @@ copy_char: ; $fb/fc source (chargen ROM), to $fd/fe destination (normal RAM)
     sei
     lda $01
     tax
-    and #$fb
+    and #$fb ; bank 3 CHARGEN ROM
     sta $01
     ldy #7
 -   lda ($fb),y
@@ -362,7 +401,7 @@ copy_char: ; $fb/fc source (chargen ROM), to $fd/fe destination (normal RAM)
     dey
     bpl -
     txa
-    ora #7
+    ora #7 ; normal ROM + I/O
     sta $01
     cli
     rts    
@@ -405,12 +444,12 @@ encode_char: ; given chargen bitmaps at bitmap_buffer+0 to +7, output 16 screen 
     bne --
     rts
 
-text_buffer:
-    !byte 32,32,32,32,32,32,32,32,32,32
-    !byte 32,32,32,32,32,32,32,32,32,32
-    !byte 32,32,32,32,32,32,32,32,32,32
-    !byte 32,32,32,32,32,32,32,32,32,32
-    !byte 32,32,32,32,32,32,32,32,32,32
+text_buffer: ; should only need 10x5, but current algorithm uses same offset as screen so 40x5
+    !byte 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32
+    !byte 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32
+    !byte 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32
+    !byte 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32
+    !byte 32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32,32
 
 bitmap_buffer:
     !byte 0,0,0,0
@@ -423,6 +462,9 @@ save25: !byte 0
 save26: !byte 0
 save27: !byte 0
 saveff: !byte 0
+
+lastcase: !byte 0
+redraw: !byte 0
 
 ; 16 commodore graphics screen codes that make lo-res 2x2 pixels per character bits in NW,NE,SW,SE order low to high 
 lores_codes:
