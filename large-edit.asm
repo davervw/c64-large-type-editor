@@ -63,15 +63,32 @@ newirq:
     lda $fe
     sta savefe
 
-    ldx #0
-    stx $ff
+    ldx #0    
+    lda 646
+    cmp save_foreground ; detect color change
+    bne +
+    lda $d800
+    and #$0f
+    cmp save_foreground ; detect clear screen
+    beq ++
+; apply foreground color change to entire screen
++   sta save_foreground
+-   sta $d800,x
+    sta $d900,x
+    sta $da00,x
+    sta $db00,x    
+    inx
+    bne -
+    lda #$80
+    sta redraw
+
+++  stx $ff
 -   lda $0400,x
     bit redraw
-    bmi forced
+    bmi +++
     cmp $cc00 + 800,x
     beq +
-forced:
-    sta $cc00 + 800,x
++++ sta $cc00 + 800,x
     inc $ff ; a change occurred, guaranteed not not wrap
 +   clc
     inx
@@ -299,6 +316,8 @@ init:
     jsr encode_chars
     lda #$80
     sta redraw
+    lda #$ff
+    sta save_foreground
     jsr swapirq
     jsr enqueue_keys
     rts
@@ -490,6 +509,7 @@ savefe: !byte 0
 
 lastcase: !byte 0
 redraw: !byte 0
+save_foreground: !byte 0
 
 ; 16 commodore graphics screen codes that make lo-res 2x2 pixels per character bits in NW,NE,SW,SE order low to high 
 lores_codes:
