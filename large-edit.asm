@@ -113,8 +113,10 @@ newirq: ; TODO: verify IRQ source is 1/60 second timer
     sta left
 
     ; adjust viewport pointer when cursor moved up/down out of frame
-++  sec
-    lda $d6
+++  lda $d6
+    cmp #25 ; check just in case (we are in IRQ), fixes glitch bug
+    bcs row_out_of_range ; e.g. endless 10 PRINT "HELLO WORLD ";:GOTO 10 and press keys on keyboard
+    sec
     sbc top
     bpl +
     tax
@@ -141,6 +143,7 @@ newirq: ; TODO: verify IRQ source is 1/60 second timer
 +   inc top
     dex
     bne -
+row_out_of_range
 
 ++  sty $ff
     lda viewport
