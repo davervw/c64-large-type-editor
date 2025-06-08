@@ -33,6 +33,15 @@
 
 CHROUT = $ffd2
 IRQVECT = $0314
+KEYVECT = $028F
+
+; key info (TODO: intercept KEYVECT to scroll screen manually)
+; $28D SHFLAG 1=shift, 2=commodore 4=control
+; $C5 last key pressed, $40=none
+; control up = 07 05
+; control down = 07 04
+; control left = 02 05
+; control right = 02 04
 
 *=$c000
     jmp init
@@ -82,6 +91,57 @@ newirq: ; TODO: verify IRQ source is 1/60 second timer
     lda #$80
     sta redraw
 
+++      ; adjust left when cursor moved left/right out of viewport frame
+    lda $d3 ; cursor column on current line (0..79)
+-   cmp #40
+    bcc +
+    sbc #40
+    bcc - ; one subtraction should be enough, but just in case
++   sec
+    sbc left
+    bpl + ; not out of frame, or went out of frame to right
+    ; otherwise went out of frame to left
+    adc left
+    bmi ++ ; shouldn't happen
+    sta left
+    jmp ++
++   sec
+    sbc #9
+    bmi ++ ; not out of frame
+    clc
+    adc left
+    sta left
+
+    ; adjust viewport pointer when cursor moved up/down out of frame
+++  sec
+    lda $d6
+    sbc top
+    bpl +
+    tax
+-   sec
+    lda viewport
+    sbc #40
+    sta viewport
+    bcs ++
+    dec viewport+1
+++  dec top
+    inx
+    bne -
+    beq ++
++   sbc #4
+    bcc ++
+    beq ++
++   tax
+-   clc
+    lda viewport
+    adc #40
+    sta viewport
+    bcc +
+    inc viewport+1
++   inc top
+    dex
+    bne -
+
 ++  sty $ff
     lda viewport
     ldx viewport+1
@@ -120,7 +180,7 @@ newirq: ; TODO: verify IRQ source is 1/60 second timer
 
     lda $ff
     bne +
-    jmp ++
+    jmp +++
 
 +   lda $01
     sta $02
@@ -130,15 +190,19 @@ newirq: ; TODO: verify IRQ source is 1/60 second timer
     ldy #0
     sty $22 ; row
     sty $23 ; col
-    lda viewport
+
+    ; get pointer to viewport destination
+++  lda viewport
     clc
     adc left
     ldx viewport+1
     sta $fb
     stx $fc
+
     sty $fd ; low byte dest screen (0)
     ldx #>$cc00 ; high byte dest screen
     stx $fe
+
 -   lda ($fb),y
     bit redraw
     bmi +
@@ -289,7 +353,7 @@ restorebank
     lda $02
     sta $01
 
-++  lda save22
++++ lda save22
     sta $22
     lda save23
     sta $23

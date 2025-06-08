@@ -5,7 +5,6 @@ Large Type Editor is a utility to display a portion of the C64 screen enlarged, 
 Limitations:
 
 * Requires Commodore Revision 3 ROM because currently does not properly update color memory (rev. 1 color mismatches, rev. 2 invisible text).  Biggest problem is with scrolling.
-* Current implementation has a fixed viewport onto the virtual screen.  Only the top 5 lines, leftmost 10 columns are currently displayed.
 * Unfortunately multiple color support is not currently implemented (more complex challenge as source and destination addresses will both be $D800), so any foreground color change updates entire screen
 * Code and buffers are using $C000-$CF00
 * Chargen ROM had to be copied to its same address $D000-$DFFF RAM
