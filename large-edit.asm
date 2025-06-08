@@ -91,7 +91,7 @@ newirq: ; TODO: verify IRQ source is 1/60 second timer
     lda #$80
     sta redraw
 
-++      ; adjust left when cursor moved left/right out of viewport frame
+++  ; adjust left when cursor moved left/right out of viewport frame
     lda $d3 ; cursor column on current line (0..79)
 -   cmp #40
     bcc +
@@ -112,8 +112,30 @@ newirq: ; TODO: verify IRQ source is 1/60 second timer
     adc left
     sta left
 
-    ; adjust viewport pointer when cursor moved up/down out of frame
-++  lda $d6
+++  ; check if horizontal scroll bar position changed
+    ldy last_left
+    cpy left
+    beq ++
+    ldx #19 ; row
+    lda mult_40_low, x
+    sta $fb
+    lda mult_40_high, x
+    clc
+    adc #>$cc00
+    sta $fc
+    lda horiz_pos,y
+    tay
+    lda #$62
+    sta ($fb),y
+    ldy left
+    sty last_left
+    lda horiz_pos,y
+    tay
+    lda #$7b
+    sta ($fb),y
+
+++  ; adjust viewport pointer when cursor moved up/down out of frame
+    lda $d6
     cmp #25 ; check just in case (we are in IRQ), fixes glitch bug
     bcs row_out_of_range ; e.g. endless 10 PRINT "HELLO WORLD ";:GOTO 10 and press keys on keyboard
     sec
@@ -130,10 +152,13 @@ newirq: ; TODO: verify IRQ source is 1/60 second timer
     inx
     bne -
     beq ++
-+   sbc #4
++   sbc #3 ; because 4th line obscured slightly by scrollbar
     bcc ++
     beq ++
 +   tax
+    lda $d6
+    cmp #24
+    bcs ++
 -   clc
     lda viewport
     adc #40
@@ -143,9 +168,38 @@ newirq: ; TODO: verify IRQ source is 1/60 second timer
 +   inc top
     dex
     bne -
+
+++  ; check if vertical scroll bar position changed
+    ldy last_top
+    cpy top
+    beq ++
+    ldx vert_pos, y
+    lda mult_40_low, x
+    sta $fb
+    lda mult_40_high, x
+    clc
+    adc #>$cc00
+    sta $fc
+    ldy #39
+    lda #$e1
+    sta ($fb),y
+    ldy top
+    sty last_top
+    ldx vert_pos, y
+    lda mult_40_low, x
+    sta $fb
+    lda mult_40_high, x
+    clc
+    adc #>$cc00
+    sta $fc
+    ldy #39
+    lda #$7c
+    sta ($fb),y
+
 row_out_of_range
 
-++  sty $ff
+++  ldy #0
+    sty $ff
     lda viewport
     ldx viewport+1
     sta $fb
@@ -254,11 +308,7 @@ row_out_of_range
     lda ($26),y
     sta ($fd),y
 
-    iny ;3
-    lda ($26),y
-    sta ($fd),y
-
-    iny ;4
+    ldy #4
     lda ($26),y
     ldy #40
     sta ($fd),y
@@ -271,11 +321,6 @@ row_out_of_range
     ldy #6
     lda ($26),y
     ldy #42
-    sta ($fd),y
-
-    ldy #7
-    lda ($26),y
-    ldy #43
     sta ($fd),y
 
     ldy #8
@@ -293,10 +338,27 @@ row_out_of_range
     ldy #82
     sta ($fd),y
 
+    lda $23
+    cmp #9
+    beq +
+
+    ldy #3
+    lda ($26),y
+    sta ($fd),y
+
+    ldy #7
+    lda ($26),y
+    ldy #43
+    sta ($fd),y
+
     ldy #11
     lda ($26),y
     ldy #83
     sta ($fd),y
+
++   lda $22
+    cmp #4
+    beq +
 
     ldy #12
     lda ($26),y
@@ -313,12 +375,16 @@ row_out_of_range
     ldy #122
     sta ($fd),y
 
+    lda $23
+    cmp #9
+    beq +
+
     ldy #15
     lda ($26),y
     ldy #123
     sta ($fd),y
 
-    ldy $ff ; restore index
++   ldy $ff ; restore index
 
 skip
     iny
@@ -413,6 +479,32 @@ switch_screen_cc00:
     inx
     bne -
 
+    ldx #24
+    ldy #39
+    ;paint vertical border at (39,24 ... 39,0) and horizontal border on row 19
+--  lda mult_40_low, x
+    sta $fb
+    lda mult_40_high, x
+    clc
+    adc #>$cc00
+    sta $fc
+    lda #$e1
+    sta ($fb),y
+    cpx #19
+    bne +
+    lda #$fe
+-   sta ($fb),y
+    lda #$62
+    dey
+    bne -
+    lda #$7B
+    sta ($fb),y
+    ldy #39
++   dex
+    bpl --
+    lda #$7c
+    sta ($fb),y
+
     lda #$04
     sta $dd00
 
@@ -422,6 +514,9 @@ switch_screen_cc00:
     lda #$ff
     sta save_foreground
 
+    ldx #0
+    stx last_left ; 0
+    stx last_top ; 0
     stx left ; 0
     stx top ; 0
     stx viewport ; 0
@@ -601,6 +696,19 @@ save_foreground: !byte 0
 top: !byte 0
 left: !byte 0
 viewport: !word 0 ; address to column 0
+last_left: !byte 0 ; 0..79
+last_top: !byte 0 ; 0..24
+
+; complementary colors for scrollbars (TODO, challenge is scrolling color memory)
+inverse_colors !byte 1,0,5,10,13,2,8,9,6,7,3,14,15,4,11,12
+
+; translate top/left to scrollbar position screen position (TODO)
+vert_pos !byte 0,1,2,3,4,5,5,6,7,8,9,10,11,12,13,14,14,15,16,17,18
+horiz_pos !byte 0,1,3,4,5,6,8,9,10,11,13,14,15,16,18,19,20,21,23,24,25,26,28,29,30,31,33,34,35,36,38
+
+; x 40 multiplication table, indexed 0..24
+mult_40_low !byte 0,40,80,120,160,200,240,24,64,104,144,184,224,8,48,88,128,168,208,248,32,72,112,152,192
+mult_40_high !byte 0,0,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,3,3,3,3,3
 
 ; 16 commodore graphics screen codes that make lo-res 2x2 pixels per character bits in NW,NE,SW,SE order low to high 
 lores_codes:
