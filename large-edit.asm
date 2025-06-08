@@ -83,8 +83,8 @@ newirq: ; TODO: verify IRQ source is 1/60 second timer
     sta redraw
 
 ++  sty $ff
-    lda #<($0400)
-    ldx #>($0400)
+    lda viewport
+    ldx viewport+1
     sta $fb
     stx $fc
     lda #<($cc00 + 800)
@@ -130,8 +130,10 @@ newirq: ; TODO: verify IRQ source is 1/60 second timer
     ldy #0
     sty $22 ; row
     sty $23 ; col
-    lda #<($0400)
-    ldx #>($0400)
+    lda viewport
+    clc
+    adc left
+    ldx viewport+1
     sta $fb
     stx $fc
     sty $fd ; low byte dest screen (0)
@@ -323,10 +325,6 @@ init:
     ldx #>title
     jsr strout
     jsr encode_chars
-    lda #$80
-    sta redraw
-    lda #$ff
-    sta save_foreground
     jsr swapirq
     jsr enqueue_keys
     rts
@@ -347,8 +345,22 @@ switch_screen_cc00:
     sta $cf00, x
     inx
     bne -
+
     lda #$04
     sta $dd00
+
+    lda #$80
+    sta redraw
+
+    lda #$ff
+    sta save_foreground
+
+    stx left ; 0
+    stx top ; 0
+    stx viewport ; 0
+    lda #>$0400
+    sta viewport+1
+
     rts
 
 swapirq:
@@ -519,6 +531,9 @@ savefe: !byte 0
 lastcase: !byte 0
 redraw: !byte 0
 save_foreground: !byte 0
+top: !byte 0
+left: !byte 0
+viewport: !word 0 ; address to column 0
 
 ; 16 commodore graphics screen codes that make lo-res 2x2 pixels per character bits in NW,NE,SW,SE order low to high 
 lores_codes:
