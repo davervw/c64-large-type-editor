@@ -37,7 +37,7 @@ IRQVECT = $0314
 *=$c000
     jmp init
 
-newirq:
+newirq: ; TODO: verify IRQ source is 1/60 second timer
     lda $ff
     sta saveff
     lda $22
@@ -63,7 +63,7 @@ newirq:
     lda $fe
     sta savefe
 
-    ldx #0    
+    ldy #0    
     lda 646
     cmp save_foreground ; detect color change
     bne +
@@ -73,26 +73,33 @@ newirq:
     beq ++
 ; apply foreground color change to entire screen
 +   sta save_foreground
--   sta $d800,x
-    sta $d900,x
-    sta $da00,x
-    sta $db00,x    
-    inx
+-   sta $d800,y
+    sta $d900,y
+    sta $da00,y
+    sta $db00,y    
+    iny
     bne -
     lda #$80
     sta redraw
 
-++  stx $ff
--   lda $0400,x
+++  sty $ff
+    lda #<($0400)
+    ldx #>($0400)
+    sta $fb
+    stx $fc
+    lda #<($cc00 + 800)
+    ldx #>($cc00 + 800)
+    sta $fd
+    stx $fe
+-   lda ($fb),y
     bit redraw
     bmi +++
-    cmp $cc00 + 800,x
+    cmp ($fd),y
     beq +
-+++ sta $cc00 + 800,x
-    inc $ff ; a change occurred, guaranteed not not wrap
-+   clc
-    inx
-    cpx #200
++++ sta ($fd),y
+    inc $ff ; a change occurred, guaranteed not to wrap
++   iny
+    cpy #200
     bcc -
 
     ; check case change
@@ -123,11 +130,12 @@ newirq:
     ldy #0
     sty $22 ; row
     sty $23 ; col
-    sty $fb ; low byte source screen
-    ldx #4
-    stx $fc ; high byte source screen
-    sty $fd ; low byte dest screen
-    ldx #$cc ; high byte dest screen
+    lda #<($0400)
+    ldx #>($0400)
+    sta $fb
+    stx $fc
+    sty $fd ; low byte dest screen (0)
+    ldx #>$cc00 ; high byte dest screen
     stx $fe
 -   lda ($fb),y
     bit redraw
@@ -162,25 +170,26 @@ newirq:
     and #$f8
     sta $01
    
-    sty $ff
+    sty $ff ; save index
 
+    ; copy the 16 characters (unrolled loop)
     ldy #0
     lda ($26),y
     sta ($fd),y
 
-    ldy #1
+    iny ;1
     lda ($26),y
     sta ($fd),y
 
-    ldy #2
+    iny ;2
     lda ($26),y
     sta ($fd),y
 
-    ldy #3
+    iny ;3
     lda ($26),y
     sta ($fd),y
 
-    ldy #4
+    iny ;4
     lda ($26),y
     ldy #40
     sta ($fd),y
@@ -240,7 +249,7 @@ newirq:
     ldy #123
     sta ($fd),y
 
-    ldy $ff
+    ldy $ff ; restore index
 
 skip
     iny
@@ -252,7 +261,7 @@ skip
     inc $fe
 +   inc $23
     lda $23
-    cmp #10
+    cmp #10 ; done columns?
     bcs +
     jmp -
 +   lda #0
@@ -268,7 +277,7 @@ skip
     inc $fe
 +   inc $22
     lda $22
-    cmp #5
+    cmp #5 ; done rows?
     bcs +
     jmp -
 +   lda #0
