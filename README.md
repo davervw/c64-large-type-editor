@@ -9,7 +9,7 @@ Limitations:
 * Code and buffers are using $C000-$CF00
 * Chargen ROM had to be copied to its same address $D000-$DFFF RAM
 * Encoded 4x4 characters are using $E000-$FFFF RAM 
-* With IRQ processing shows running at about 62-66% of the system's original processing power (could decrease fps to regain some performance)
+* Tests show running with new IRQ processing at about 62-66% of the system's original processing power (could decrease fps to regain some performance)
 
 Press [STOP]+[RESTORE] to return to normal 40x25 screen operation.   
 ```SYS 49152``` to return to large type.
