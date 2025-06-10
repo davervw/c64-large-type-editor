@@ -4,6 +4,8 @@
 ; github.com/davervw
 ; www.davevw.com
 
+; ACME 0.97 is used to compile this assembler source https://sourceforge.net/projects/acme-crossass/
+
 ; Memory map
 ; 0000-00FF zero page: temps(saved):22,23,24,25,26,27,ff  and not saved: 02,fb,fc,fd,fe
 ; 0100-01FF stack
@@ -11,9 +13,6 @@
 ; 0400-07FF logical screen codes memory (BASIC thinks screen is here)
 ; 0800-09FF BASIC RAM
 ; A000-BFFF BASIC ROM
-; B400-B7FF color_next (banked RAM under ROM) = changes detected as if no viewports [TODO]
-; BC00-BFFF color_copy (banked RAM under ROM) = what color memory should be as if no viewports [TODO]
-; B800-BBFF color_last (banked RAM under ROM) = exact copy of color memory applied with viewports [TODO]
 ; C000-CBFF Large Type Editor machine code program, data, and misc. buffers
 ; CC00-CFFF VIC-II screen displayed
 ; D000-D7FF I/O (and banked chargen ROM, and banked RAM with copy of chargen ROM)
@@ -34,14 +33,6 @@
 CHROUT = $ffd2
 IRQVECT = $0314
 KEYVECT = $028F
-
-; key info (TODO: intercept KEYVECT to scroll screen manually)
-; $28D SHFLAG 1=shift, 2=commodore 4=control
-; $C5 last key pressed, $40=none
-; control up = 07 05
-; control down = 07 04
-; control left = 02 05
-; control right = 02 04
 
 *=$c000
     jmp init

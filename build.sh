@@ -1,4 +1,7 @@
 #!/bin/sh -x
+# dependencies:
+# https://sourceforge.net/projects/acme-crossass/
+# https://vice-emu.sourceforge.io/
 export ACME=${USERPROFILE}/Downloads/acme0.97win/acme
 export VICE=${USERPROFILE}/Downloads/GTK3VICE-3.8-win64/bin
 export PROG=large-edit
