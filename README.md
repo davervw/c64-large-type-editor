@@ -14,4 +14,4 @@ Limitations:
 Press [STOP]+[RESTORE] to return to normal 40x25 screen operation.   
 ```SYS 49152``` to return to large type.
 
-![gif](large-type-blink-1080.gif)
+![gif](demo_0.02.gif)
